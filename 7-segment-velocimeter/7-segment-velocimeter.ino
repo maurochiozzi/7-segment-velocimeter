@@ -99,33 +99,33 @@ SevenSegmentsDisplay displayA(1);
 SevenSegmentsDisplay displayB(1);
 
 // Velocity
-const int e = 250; 						// time interval to stop reading velocity sinal and do the math to calculate de average velocity every e-time
-long volatile dt_time = 0;				// time difference (delta t) between 2 velocity sinal
-float volatile last_signal_time = 0;	// when the last sinal was read
-float volatile velKh = 0;				// Velocity in km / h
-int average_vel;						// this average velocity is has a too low dt depending on the velocity that can be consired as instant velocity
-int volatile count_vel = 0;				// count the ammount of instant velocity calculated in e-time
-int volatile velkH_accumulated = 0;		// the sum of all instant velocity calculated in e-time
-long int t_e_vel=0;						// when the last average velocity was calculated
+const short e = 250; 							// time interval to stop reading velocity sinal and do the math to calculate de average velocity every e-time
+long volatile dt_time = 0;						// time difference (delta t) between 2 velocity sinal
+long volatile last_signal_time = 0;				// when the last sinal was read
+float volatile velKh = 0;						// Velocity in km / h
+int average_vel;								// this average velocity is has a too low dt depending on the velocity that can be consired as instant velocity
+int volatile count_vel = 0;						// count the ammount of instant velocity calculated in e-time
+int volatile velkH_accumulated = 0;				// the sum of all instant velocity calculated in e-time
+long int t_e_vel=0;								// when the last average velocity was calculated
 
-const long wheel_radius = (29 * 0.0254) / 2; // wheel radius. Converting from inches to meter 
-const short number_signals = 18;	// Numbers of signals to complete 1 wheel loop 
-const long const_velocity = (2 * 3.14 * wheel_radius / number_signals);
-const long meterSecond_to_kilometerHour = 3.6;
+const float wheel_radius = (29 * 0.0254) / 2; 	// wheel radius. Converting from inches to meter 
+const short number_signals = 18;				// Numbers of signals to complete 1 wheel loop 
+const float const_velocity = (2 * 3.14 * wheel_radius / number_signals);
+const float meterSecond_to_kilometerHour = 3.6;
 
-void velocidade(){
+void velocity(){
 	detachInterrupt(1);
 	dt_time = millis() - last_signal_time;
 	last_signal_time = millis();
-	velKh = meterSecond_to_kilometerHour * (const_velocity / (dt_time / 1000));
+	velKh = meterSecond_to_kilometerHour * const_velocity / (dt_time / 1000.0);
+	
 	count_vel++;
 	velkH_accumulated += velKh;
 	delay(20);
-	attachInterrupt(0, velocidade, RISING);
+	attachInterrupt(0, velocity, RISING);
 }
 
-void calcular(){
-	//VELOCIDADE------------------------------------------------------------------
+void calculate(){
 	if(millis()- t_e_vel > e && count_vel !=0){
 		average_vel = (velkH_accumulated/count_vel);
 		count_vel = 0;
@@ -140,8 +140,7 @@ void calcular(){
 void setup() {
 	Serial.begin(9600);
 
-	// Display setup
-
+	// Display setup - Arduino MEGA pinouts: change to as you prefer
 	int ports_displayA = new int[8]{35, 37, 27, 25, 23, 33, 31, 29};
 	int ports_displayB = new int[8]{34, 36, 26, 24, 22, 32, 30, 28};
 	
@@ -152,16 +151,17 @@ void setup() {
 	displayB.initDisplay();
 
 	// Velocimeter sensor (digital)
-	attachInterrupt(0, velocidade, RISING);
+	attachInterrupt(0, velocity, RISING);
     t_e_vel = millis();
 
 }
 
 void loop() {
-	// put your main code here, to run repeatedly:
-	calcular();
+	calculate();
+
 	displayA.writeDigit(average_vel / 10);
 	displayB.writeDigit(average_vel % 10);
+	
 	delay(130);
 }
 
