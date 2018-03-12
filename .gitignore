@@ -2,3 +2,5 @@
 *.hex
 
 *.pdsbak
+
+*.workspace
