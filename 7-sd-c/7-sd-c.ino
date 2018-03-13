@@ -27,39 +27,39 @@ int main (void)
 	// using the same configuration as shown in DDRB and DDRD
 	// Since I'm using common anode 7s, 1 means off and 0 means on
 	// Don't confuse with the transistor DDRDxTTxxxxx, they still use 1 as on and 0 as off 
-	short digits[10][3] = {{0b11100000,0b00011111,0b01111111},	// 0
-						   {0b11111100,0b10011111,0xff},		// 1
-						   {0b11010010,0b00011111,0b01111111},	// 2
-						   {0b11011000,0b00011111,0b01111111},	// 3
-						   {0b11001100,0b10011111,0xff},		// 4
-						   {0b11001001,0b00011111,0b01111111},	// 5
-						   {0b11000001,0b00011111,0b01111111},	// 6
-						   {0b11111100,0b00011111,0b01111111},	// 7
-						   {0b11000000,0b00011111,0b01111111},	// 8
-						   {0b11001100,0b00011111,0b01111111}};	// 9
+	short digits[10][3] = {{0xe0,0x1f,0x7f},	// 0	{0b11100000,0b00011111,0b01111111},
+						   {0xfc,0x9f,0xff},	// 1	{0b11111100,0b10011111,0xff},
+						   {0xd2,0x1f,0x7f},	// 2	{0b11010010,0b00011111,0b01111111},
+						   {0xd8,0x1f,0x7f},	// 3	{0b11011000,0b00011111,0b01111111},
+						   {0xcc,0x9f,0xff},	// 4	{0b11001100,0b10011111,0xff},
+						   {0xc9,0x1f,0x7f},	// 5	{0b11001001,0b00011111,0b01111111},
+						   {0xc1,0x1f,0x7f},	// 6	{0b11000001,0b00011111,0b01111111},
+						   {0xfc,0x1f,0x7f},	// 7	{0b11111100,0b00011111,0b01111111},
+						   {0xc0,0x1f,0x7f},	// 8	{0b11000000,0b00011111,0b01111111},
+						   {0xcc,0x1f,0x7f}};	// 9	{0b11001100,0b00011111,0b01111111}
 
 	// DDRB Ports. 					   
 	//		   GFEDCB =		7s pins
-	DDRB = 0b00111111;
+	DDRB = 0x3f;	// 0b00111111
 	//		 A12			Where A is the last remaining pin from the 7s and the 
 	//						1 & 2 referes to the first and second transistor.		
-	DDRD = 0b11100000;
+	DDRD = 0xe0;	// 0b11100000
 
 	// Counting from 0 to 99 test
 	for(int i = 0; i < 100; i++){
 		// To keep the number showing for a litte time
 		for(int k = 0; k < 5; k++){ // should be millis() - lastChange, but at this time I still don't know how to implemet millis() :)
 			// Turn on the first transistor
-			PORTD |= 0b01000000;
+			PORTD |= 0x40;	// 0b01000000
 			// Turn off the last one
-			PORTD &= 0b11011111;
+			PORTD &= 0xdf;	// 0b11011111
 			writeDigit(digits, i / 10);
 			_delay_ms(30);
 
 			// Turn on the second transistor
-			PORTD |= 0b00100000;
+			PORTD |= 0x20;	// 0b00100000
 			// Turn off the first
-			PORTD &= 0b10111111;
+			PORTD &= 0xbf;	// 0b10111111
 			writeDigit(digits, i % 10);
 			_delay_ms(30);
 		}
