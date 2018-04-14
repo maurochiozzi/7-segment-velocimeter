@@ -5,98 +5,17 @@
 	Mauro Chiozzi 
 */
 
-/* 
-	Seven segments (7s) display class. Could have used the already made lib,
-	but sometimes it's funnier DIY.
-*/
-class SevenSegmentsDisplay {	
-	// Array-sequence to turn up a digit
-	//							 	 A  B  C  D  E  F  G  H
-	const short numbers[10][8] =   {{1, 1, 1, 1, 1, 1, 0, 0}, 	// 0
-									{0, 1, 1, 0, 0, 0, 0, 0},	// 1
-									{1, 1, 0, 1, 1, 0, 1, 0},	// 2
-									{1, 1, 1, 1, 0, 0, 1, 0},	// 3
-									{0, 1, 1, 0, 0, 1, 1, 0},	// 4
-									{1, 0, 1, 1, 0, 1, 1, 0},	// 5
-									{1, 0, 1, 1, 1, 1, 1, 0},	// 6
-									{1, 1, 1, 0, 0, 0, 0, 0},	// 7
-									{1, 1, 1, 1, 1, 1, 1, 0},	// 8
-									{1, 1, 1, 0, 0, 1, 1, 0}};	// 9
+short digits[10][3] = {{0xe0,0b00000000,0x7f},	// 0	{0b11100000,0b00000000,0b01111111},
+					   {0xfc,0b10000000,0xff},	// 1	{0b11111100,0b10000000,0xff},
+					   {0xd2,0b00000000,0x7f},	// 2	{0b11010010,0b00000000,0b01111111},
+					   {0xd8,0b00000000,0x7f},	// 3	{0b11011000,0b00000000,0b01111111},
+					   {0xcc,0b10000000,0xff},	// 4	{0b11001100,0b10000000,0xff},
+					   {0xc9,0b00000000,0x7f},	// 5	{0b11001001,0b00000000,0b01111111},
+					   {0xc1,0b00000000,0x7f},	// 6	{0b11000001,0b00000000,0b01111111},
+					   {0xfc,0b00000000,0x7f},	// 7	{0b11111100,0b00000000,0b01111111},
+					   {0xc0,0b00000000,0x7f},	// 8	{0b11000000,0b00000000,0b01111111},
+					   {0xcc,0b00000000,0x7f}};	// 9	{0b11001100,0b00000000,0b01111111}
 
-	// There are two kinds of 7s: the anode type and the cathode type
-	// Use 0 if your 7s use common anode or 1 if use common cathode.
-	boolean default_off_value;
-
-	/**
-		Port A 	=>	index 0;
-		Port B 	=>	index 1;
-		Port C 	=>	index 2;
-		Port D 	=>	index 3;
-		Port E 	=>	index 4;
-		Port F 	=>	index 5;
-		Port G 	=>	index 6;
-		Port DP =>	index 7; Can be omitted
-	*/
-	int *ports;
-	int ports_state[8];
-
-	public :
-
-		/**
-			Constructor. Must have the boolean value saying which type is the 7s
-		*/
-		SevenSegmentsDisplay(boolean _default_off_value){
-			default_off_value = _default_off_value;
-		}
-
-		/**
-			Set 7s ports according the relation shown above
-		*/
-		void setPorts(int *_ports){
-			ports = _ports;
-		}
-
-		/**
-			Aftes setting the ports, it's necessary initializate the ports as output
-		*/
-		void initDisplay(){
-			for(int i = 0; i < 7; i++){
-		 		pinMode(ports[i], OUTPUT);
-		 		digitalWrite(ports[i], default_off_value);
-			}
-		}
-
-		/**
-			Turn off all 7s leds
-		*/
-		void turnOffDisplay(){
-			for(int i = 0; i < 7; i++){
-		 		digitalWrite(ports[i], default_off_value);
-			}
-		}
-
-		/**
-			Turn on all 7s leds
-		*/
-		void turnOnDisplay(){
-			for(int i = 0; i < 7; i++){
-		 		digitalWrite(ports[i], !default_off_value);
-			}
-		}
-
-		/**
-			Write the number digit
-		*/
-		void writeDigit(int digit){
-			for(int i = 0; i < 7; i++){
-				digitalWrite(ports[i], numbers[digit][i] == !default_off_value);
-			}
-		}
-};
-
-// 7s Diplays
-SevenSegmentsDisplay displayA(1);
-SevenSegmentsDisplay displayB(1);
 
 // Velocity
 const short e = 250; 							// time interval to stop reading velocity sinal and do the math to calculate de average velocity every e-time
@@ -137,18 +56,33 @@ void calculate(){
 	}
 }
 
+
+void writeDigit(short digitMatrix[][3], int digit){
+	// The first column will have only the PORTB states, so we can just put like this
+	PORTB  = digitMatrix[digit][0];
+	// However, PORTD contains one bit information that still represent one of the leds,
+	// and others states from the transistors. In this case, we don't know which state
+	// the transistors are, thus we can't simply put the bit values in the PORTD.
+	// The second matrix's column have the bits which need to be turned on. Using
+	// OR operation, we can turn on the led we want and leave the others just as they where before
+	// Here, 0 means: leave the same value as before, and 1 means to change
+	PORTD |= digitMatrix[digit][1];
+	// The second expression, using a AND operator, turn off all wanted leds
+	// Here, 1 means: leave the same, and 0: to change
+	PORTD &= digitMatrix[digit][2];
+}
+
 void setup() {
+
 	Serial.begin(9600);
 
-	// Display setup - Arduino MEGA pinouts: change to as you prefer
-	int ports_displayA = new int[8]{35, 37, 27, 25, 23, 33, 31, 29};
-	int ports_displayB = new int[8]{34, 36, 26, 24, 22, 32, 30, 28};
-	
-	displayA.setPorts(ports_displayA);
-	displayB.setPorts(ports_displayB);
-
-	displayA.initDisplay();
-	displayB.initDisplay();
+	// DDRB Ports. 					   
+	//		   GFEDCB =		7s pins
+	DDRB = 0x3f;	// 0b00111111
+	//		 A12			Where A is the last remaining pin from the 7s and the 
+	//						1 & 2 referes to the first and second transistor.		
+	DDRD = 0xe0;	// 0b1110000
+	PIND = 0x00;
 
 	// Velocimeter sensor (digital)
 	attachInterrupt(0, velocity, RISING);
@@ -157,11 +91,34 @@ void setup() {
 }
 
 void loop() {
-	calculate();
+
+
+	/*calculate();
 
 	displayA.writeDigit(average_vel / 10);
 	displayB.writeDigit(average_vel % 10);
 	
-	delay(130);
+	delay(130);*/
+
+	// Counting from 0 to 99 test
+	for(int i = 0; i < 100; i++){
+		// To keep the number showing for a litte time
+		for(int k = 0; k < 5; k++){ // should be millis() - lastChange, but at this time I still don't know how to implemet millis() :)
+			// Turn on the first transistor
+			PORTD |= 0x40;	// 0b01000000
+			// Turn off the last one
+			PORTD &= 0xdf;	// 0b11011111
+			writeDigit(digits, i / 10);
+			_delay_ms(15);
+
+			// Turn on the second transistor
+			PORTD |= 0x20;	// 0b00100000
+			// Turn off the first
+			PORTD &= 0xbf;	// 0b10111111
+			writeDigit(digits, i % 10);
+			_delay_ms(15);
+		}
+	}
+
 }
 
